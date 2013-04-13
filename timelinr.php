@@ -2,7 +2,7 @@
 /*
 Plugin Name: Timelinr
 Plugin URI: -
-Description: Schibsted Hack Day X.
+Description: Schibsted Hack Day X. Dependencies: Simple-Fields.
 Version: 1.0
 Author: Chris Larsson
 Author URI: http://christofferlarsson.se
@@ -20,6 +20,10 @@ class Timelinr {
 	 * Initializes the plugin by setting localization, filters, and administration functions.
 	 */
 	function __construct() {
+
+		// Check if SF is loaded or not.
+		// TODO: Give better feedback. Admin notification?
+		if (!function_exists("sf_d")) return;
 
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'plugin_textdomain' ) );
@@ -163,5 +167,4 @@ class Timelinr {
 
 } // end class
 
-// TODO:	Update the instantiation call of your plugin to the name given at the class definition
 $timelinr = new Timelinr();
