@@ -41,19 +41,7 @@ class Timelinr {
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 		register_uninstall_hook( __FILE__, array( $this, 'uninstall' ) );
 
-	    /*
-	     * TODO:
-	     * Define the custom functionality for your plugin. The first parameter of the
-	     * add_action/add_filter calls are the hooks into which your code should fire.
-	     *
-	     * The second parameter is the function name located within this class. See the stubs
-	     * later in the file.
-	     *
-	     * For more information:
-	     * http://codex.wordpress.org/Plugin_API#Hooks.2C_Actions_and_Filters
-	     */
-	    add_action( 'TODO', array( $this, 'action_method_name' ) );
-	    add_filter( 'TODO', array( $this, 'filter_method_name' ) );
+		$this->setup_simple_fields();
 
 	} // end constructor
 
@@ -89,8 +77,8 @@ class Timelinr {
 	 */
 	public function plugin_textdomain() {
 
-		// TODO: replace "plugin-name-locale" with a unique value for your plugin
-		$domain = 'plugin-name-locale';
+		// TODO: replace "timelinr-locale" with a unique value for your plugin
+		$domain = 'timelinr-locale';
 		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
         load_textdomain( $domain, WP_LANG_DIR.'/'.$domain.'/'.$domain.'-'.$locale.'.mo' );
         load_plugin_textdomain( $domain, FALSE, dirname( plugin_basename( __FILE__ ) ) . '/lang/' );
@@ -102,8 +90,7 @@ class Timelinr {
 	 */
 	public function register_admin_styles() {
 
-		// TODO:	Change 'plugin-name' to the name of your plugin
-		wp_enqueue_style( 'plugin-name-admin-styles', plugins_url( 'plugin-name/css/admin.css' ) );
+		wp_enqueue_style( 'timelinr-admin-styles', plugins_url( 'timelinr/css/admin.css' ) );
 
 	} // end register_admin_styles
 
@@ -112,8 +99,7 @@ class Timelinr {
 	 */
 	public function register_admin_scripts() {
 
-		// TODO:	Change 'plugin-name' to the name of your plugin
-		wp_enqueue_script( 'plugin-name-admin-script', plugins_url( 'plugin-name/js/admin.js' ), array('jquery') );
+		wp_enqueue_script( 'timelinr-admin-script', plugins_url( 'timelinr/js/admin.js' ), array('jquery') );
 
 	} // end register_admin_scripts
 
@@ -122,8 +108,9 @@ class Timelinr {
 	 */
 	public function register_plugin_styles() {
 
-		// TODO:	Change 'plugin-name' to the name of your plugin
-		wp_enqueue_style( 'plugin-name-plugin-styles', plugins_url( 'plugin-name/css/display.css' ) );
+		wp_enqueue_style( 'timelinr-plugin-styles', plugins_url( 'timelinr/css/display.css' ) );
+		// TODO: Only queue when needed
+		wp_enqueue_style( 'timelinr-plugin-styles', plugins_url( 'timelinr/css/display.css' ) );
 
 	} // end register_plugin_styles
 
@@ -132,8 +119,9 @@ class Timelinr {
 	 */
 	public function register_plugin_scripts() {
 
-		// TODO:	Change 'plugin-name' to the name of your plugin
-		wp_enqueue_script( 'plugin-name-plugin-script', plugins_url( 'plugin-name/js/display.js' ), array('jquery') );
+		wp_enqueue_script( 'timelinr-plugin-script', plugins_url( 'timelinr/js/display.js' ), array('jquery'), null, true );
+		// TODO: only queue when needed
+		wp_enqueue_script( 'timelinejs-script', plugins_url( 'timelinr/js/storyjs-embed.js' ), array('jquery'), null, true );
 
 	} // end register_plugin_scripts
 
@@ -141,29 +129,144 @@ class Timelinr {
 	 * Core Functions
 	 *---------------------------------------------*/
 
-	/**
- 	 * NOTE:  Actions are points in the execution of a page or process
-	 *        lifecycle that WordPress fires.
-	 *
-	 *		  WordPress Actions: http://codex.wordpress.org/Plugin_API#Actions
-	 *		  Action Reference:  http://codex.wordpress.org/Plugin_API/Action_Reference
-	 *
-	 */
-	function action_method_name() {
-    	// TODO:	Define your action method here
-	} // end action_method_name
+	public function setup_simple_fields( )
+	{
 
-	/**
-	 * NOTE:  Filters are points of execution in which WordPress modifies data
-	 *        before saving it or sending it to the browser.
-	 *
-	 *		  WordPress Filters: http://codex.wordpress.org/Plugin_API#Filters
-	 *		  Filter Reference:  http://codex.wordpress.org/Plugin_API/Filter_Reference
-	 *
-	 */
-	function filter_method_name() {
-	    // TODO:	Define your filter method here
-	} // end filter_method_name
+		simple_fields_register_field_group('test',
+			array (
+				'name' => 'Test field group',
+				'description' => "Test field description",
+				'repeatable' => 1,
+				'fields' => array(
+					array(
+						'slug' => "my_text_field_slug",
+						'name' => 'Test text',
+						'description' => 'Text description',
+						'type' => 'text'
+					),
+					array(
+						'slug' => "my_textarea_field_slug",
+						'name' => 'Test textarea',
+						'description' => 'Textarea description',
+						'type' => 'textarea',
+						'type_textarea_options' => array('use_html_editor' => 1)
+					),
+					array(
+						'slug' => "my_checkbox_field_slug",
+						'name' => 'Test checkbox',
+						'description' => 'Checkbox description',
+						'type' => 'checkbox',
+						'type_checkbox_options' => array('checked_by_default' => 1)
+					),
+					array(
+						'slug' => "my_radiobutton_field_slug",
+						'name' => 'Test radiobutton',
+						'description' => 'Radiobutton description',
+						'type' => 'radiobutton',
+						'type_radiobutton_options' => array(
+							array("value" => "Yes"),
+							array("value" => "No")
+						)
+					),
+					array(
+						'slug' => "my_dropdown_field_slug",
+						'name' => 'Test dropdown',
+						'description' => 'Dropdown description',
+						'type' => 'dropdown',
+						'type_dropdown_options' => array(
+							"enable_multiple" => 1,
+							"enable_extended_return_values" => 1,
+							array("value" => "Yes"),
+							array("value" => "No")
+						)
+					),
+					array(
+						'slug' => "my_file_field_slug",
+						'name' => 'Test file',
+						'description' => 'File description',
+						'type' => 'file'
+					),
+					array(
+						'slug' => "my_post_field_slug",
+						'name' => 'Test post',
+						'description' => 'Post description',
+						'type' => 'post',
+						'type_post_options' => array("enabled_post_types" => array("post"))
+					),
+					array(
+						'slug' => "my_taxonomy_field_slug",
+						'name' => 'Test taxonomy',
+						'description' => 'Taxonomy description',
+						'type' => 'taxonomy',
+						'type_taxonomy_options' => array("enabled_taxonomies" => array("category"))
+					),
+					array(
+						'slug' => "my_taxonomyterm_field_slug",
+						'name' => 'Test taxonomy term',
+						'description' => 'Taxonomy term description',
+						'type' => 'taxonomyterm',
+						'type_taxonomyterm_options' => array("enabled_taxonomy" => "category")
+					),
+					array(
+						'slug' => "my_color_field_slug",
+						'name' => 'Test color selector',
+						'description' => 'Color selector description',
+						'type' => 'color'
+					),
+					array(
+						'slug' => "my_date_field_slug",
+						'name' => 'Test date selector',
+						'description' => 'Date selector description',
+						'type' => 'date',
+						'type_date_options' => array('use_time' => 1)
+					),
+					array(
+						'slug' => "my_date2_field_slug",
+						'name' => 'Test date selector',
+						'description' => 'Date v2 selector description',
+						'type' => 'date_v2',
+						"options" => array(
+							"date_v2" => array(
+								"show" => "on_click",
+								"show_as" => "datetime",
+								"default_date" => "today"
+							)
+						)
+					),			
+					array(
+						'slug' => "my_user_field_slug",
+						'name' => 'Test user selector',
+						'description' => 'User selector description',
+						'type' => 'user'
+					)
+				)
+			)
+		);
+
+		// function simple_fields_register_post_connector($unique_name = "", $new_post_connector = array()) {
+		simple_fields_register_post_connector('test_connector',
+			array (
+				'name' => "A test connector",
+				'field_groups' => array(
+					array(
+						'slug' => 'test',
+						'context' => 'normal',
+						'priority' => 'high'
+					)
+				),
+				'post_types' => array('post')
+			)
+		);
+
+		/**
+		 * Sets the default post connector for a post type
+		 * 
+		 * @param $post_type_connector = connector id (int) or slug (string) or string __inherit__
+		 * 
+		 */
+		simple_fields_register_post_type_default('test_connector', 'post');
+
+	}
 
 } // end class
 
