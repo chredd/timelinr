@@ -2,7 +2,7 @@
 	"use strict";
 	$(function () {
 		// Place your public-facing JavaScript here
-		createStoryJS({
+		createStoryJSss({
 			type: "timeline",
 			lang: "sv",
 			hash_bookmark: true,

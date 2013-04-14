@@ -25,9 +25,6 @@ class Timelinr {
 		// TODO: Give better feedback. Admin notification?
 		if (!function_exists("sf_d")) return;
 
-		// Load plugin text domain
-		add_action( 'init', array( $this, 'plugin_textdomain' ) );
-
 		// Register admin styles and scripts
 		add_action( 'admin_print_styles', array( $this, 'register_admin_styles' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_admin_scripts' ) );
@@ -41,7 +38,13 @@ class Timelinr {
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 		register_uninstall_hook( __FILE__, array( $this, 'uninstall' ) );
 
+		// Add simple fields stuffs
+		// TODO, do this.
 		$this->setup_simple_fields();
+
+		// Add shortcodes
+		add_shortcode('timeline', array( $this, 'timeline_func') );
+
 
 	} // end constructor
 
@@ -71,19 +74,6 @@ class Timelinr {
 	public function uninstall( $network_wide ) {
 		// TODO:	Define uninstall functionality here
 	} // end uninstall
-
-	/**
-	 * Loads the plugin text domain for translation
-	 */
-	public function plugin_textdomain() {
-
-		// TODO: replace "timelinr-locale" with a unique value for your plugin
-		$domain = 'timelinr-locale';
-		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
-        load_textdomain( $domain, WP_LANG_DIR.'/'.$domain.'/'.$domain.'-'.$locale.'.mo' );
-        load_plugin_textdomain( $domain, FALSE, dirname( plugin_basename( __FILE__ ) ) . '/lang/' );
-
-	} // end plugin_textdomain
 
 	/**
 	 * Registers and enqueues admin-specific styles.
@@ -119,7 +109,7 @@ class Timelinr {
 	 */
 	public function register_plugin_scripts() {
 
-		wp_enqueue_script( 'timelinr-plugin-script', plugins_url( 'timelinr/js/display.js' ), array('jquery'), null, true );
+		//wp_enqueue_script( 'timelinr-plugin-script', plugins_url( 'timelinr/js/display.js' ), array('jquery'), null, true );
 		// TODO: only queue when needed
 		wp_enqueue_script( 'timelinejs-script', plugins_url( 'timelinr/js/storyjs-embed.js' ), array('jquery'), null, true );
 
@@ -128,6 +118,59 @@ class Timelinr {
 	/*--------------------------------------------*
 	 * Core Functions
 	 *---------------------------------------------*/
+
+	public function timeline_func( $atts )
+	{
+		extract( shortcode_atts( array(
+			'cat'    => null,
+			'tag'    => null,
+			'author' => null,
+			'from'   => null,
+			'to'     => null,
+			'url'    => null,
+		), $atts ) );
+
+		// Then fetch timeline data based on input
+
+		// Last of all return the timeline itself
+		$this->get_timeline( array('url' => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html') );
+
+		return "$and";
+	}
+
+	public function get_timeline( $args = array() )
+	{
+		// Set some defaults
+		$defaults = array(
+			'width'         => '100%',
+			'height'        => '600',
+			'lang'          => 'sv',
+			'hash_bookmark' => 'true',
+			'embed_id'      => 'timeline-embed',
+			'type'          => 'timeline',
+			'url'           => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
+			);
+		$args = array_merge( $defaults, $args );
+
+		ob_start(); ?>
+		<div id="<?php echo $args['embed_id'] ?>" class="timelinr-container"></div>
+		<script type="text/javascript">
+			var timeline_config = {
+				type: "<?php echo $args['type'] ?>",
+				lang: "<?php echo $args['lang'] ?>",
+				hash_bookmark: <?php echo $args['hash_bookmark'] ?>,
+				width: "<?php echo $args['width'] ?>",
+				height: "<?php echo $args['height'] ?>",
+				source: "<?php echo $args['url'] ?>",
+				embed_id: "<?php echo $args['embed_id'] ?>"
+			}
+		</script>
+
+		<?php 
+		$output = ob_get_clean();
+		print_r($output);
+		return $output;
+	}
 
 	public function setup_simple_fields( )
 	{
