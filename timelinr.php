@@ -12,7 +12,7 @@ License: -
 
 require 'FeedConverter.php';
 
-$feed = FeedConverter::fetch('http://www.aftonbladet.se/rss.xml');
+//$feed = FeedConverter::fetch('http://www.aftonbladet.se/nojesbladet/melodifestivalen/rss.xml');
 
 
 class Timelinr {
@@ -30,7 +30,7 @@ class Timelinr {
 
 		// Check if SF is loaded or not.
 		// TODO: Give better feedback. Admin notification?
-		if (!function_exists("sf_d")) return;
+		if ( !function_exists( "sf_d" ) ) return;
 
 		// Register admin styles and scripts
 		add_action( 'admin_print_styles', array( $this, 'register_admin_styles' ) );
@@ -50,7 +50,7 @@ class Timelinr {
 		$this->setup_simple_fields();
 
 		// Add shortcodes
-		add_shortcode('timeline', array( $this, 'timeline_func') );
+		add_shortcode( 'timeline', array( $this, 'timeline_func' ) );
 
 
 	} // end constructor
@@ -58,28 +58,28 @@ class Timelinr {
 	/**
 	 * Fired when the plugin is activated.
 	 *
-	 * @param	boolean	$network_wide	True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
+	 * @param boolean $network_wide True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
 	 */
 	public function activate( $network_wide ) {
-		// TODO:	Define activation functionality here
+		// TODO: Define activation functionality here
 	} // end activate
 
 	/**
 	 * Fired when the plugin is deactivated.
 	 *
-	 * @param	boolean	$network_wide	True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
+	 * @param boolean $network_wide True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
 	 */
 	public function deactivate( $network_wide ) {
-		// TODO:	Define deactivation functionality here
+		// TODO: Define deactivation functionality here
 	} // end deactivate
 
 	/**
 	 * Fired when the plugin is uninstalled.
 	 *
-	 * @param	boolean	$network_wide	True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
+	 * @param boolean $network_wide True if WPMU superadmin uses "Network Activate" action, false if WPMU is disabled or plugin is activated on an individual blog
 	 */
 	public function uninstall( $network_wide ) {
-		// TODO:	Define uninstall functionality here
+		// TODO: Define uninstall functionality here
 	} // end uninstall
 
 	/**
@@ -96,7 +96,7 @@ class Timelinr {
 	 */
 	public function register_admin_scripts() {
 
-		wp_enqueue_script( 'timelinr-admin-script', plugins_url( 'timelinr/js/admin.js' ), array('jquery') );
+		wp_enqueue_script( 'timelinr-admin-script', plugins_url( 'timelinr/js/admin.js' ), array( 'jquery' ) );
 
 	} // end register_admin_scripts
 
@@ -118,7 +118,7 @@ class Timelinr {
 
 		//wp_enqueue_script( 'timelinr-plugin-script', plugins_url( 'timelinr/js/display.js' ), array('jquery'), null, true );
 		// TODO: only queue when needed
-		wp_enqueue_script( 'timelinejs-script', plugins_url( 'timelinr/js/storyjs-embed.js' ), array('jquery'), null, true );
+		wp_enqueue_script( 'timelinejs-script', plugins_url( 'timelinr/js/storyjs-embed.js' ), array( 'jquery' ), null, true );
 
 	} // end register_plugin_scripts
 
@@ -126,62 +126,111 @@ class Timelinr {
 	 * Core Functions
 	 *---------------------------------------------*/
 
-	public function timeline_func( $atts )
-	{
+	public function timeline_func( $atts ) {
+		global $post;
 		extract( shortcode_atts( array(
-			'cat'    => null,
-			'tag'    => null,
-			'author' => null,
-			'from'   => null,
-			'to'     => null,
-			'source' => null
-		), $atts ) );
+					'headline' => null,
+					'text'     => null,
+					'cat'      => null,
+					'tag'      => null,
+					'author'   => null,
+					'from'     => null,
+					'to'       => null,
+					'source'   => null,
+					'url'      => null,
+					'height'   => '600',
+					'start_at_end' => 'true'
+				), $atts ) );
 
 		// Then fetch timeline data based on input
 
+		// Base timeline array
+
+		if( ! $headline ){
+			$headline = $post->post_title;
+		}
+		if( ! $text ){
+			$text = get_the_excerpt();
+		}
+
+		// Set base information for timeline
+
+		$timeline = array(
+				'headline' => $headline, 
+				'type' => 'default', 
+				'text' => $text, 
+				'startDate' => ''
+			);
+
+		// Add image to start slide?
+		if( has_post_thumbnail( ) ){
+			$image_url = wp_get_attachment_image_src( get_post_thumbnail_id($post->ID), 'large');
+			$timeline['asset'] = array(
+				'media' => $image_url[0]
+				);
+		}
+
+
+		// Fetch all feeds
+		if ( $url ){
+			$urls = explode(',', $url);
+			$feeds = array();
+			foreach ($urls as $url) {
+				$feed = FeedConverter::fetch( $url );
+				$feeds = array_merge($feeds, $feed);
+			}
+			$timeline['date'] = $feeds;
+		}
+
+		// Get me that JSON! (But first, place it in a timeline root node)
+		$json = json_encode( array( 'timeline' => $timeline  ) );
+
+		//print_r($json);
+
 		// Last of all return the timeline itself
-		$this->get_timeline( array( 'height' => 666 ) );
-		return "$and";
+		return $this->get_timeline( array( 'height' => $height, 'source' => $json ) );
+		return $this->get_timeline( array( 'start_at_end' => 'true', 'height' => 666, 'source' => plugins_url('timelinr/noje.json') ) );
 	}
 
-	public function get_timeline( $args = array() )
-	{
+	public function get_timeline( $args = array() ) {
 		// Set some defaults
 		$defaults = array(
 			'width'         => '100%',
-			'height'        => '600',
+			'height'        => '100%',
 			'lang'          => 'sv',
-			'hash_bookmark' => 'true',
+			'hash_bookmark' => 'false',
 			'embed_id'      => 'timeline-embed',
 			'type'          => 'timeline',
+			'start_at_end'	=>  'false',
 			'source'        => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
-			);
+		);
 		$args = array_merge( $defaults, $args );
 
 		ob_start(); ?>
 		<div id="<?php echo $args['embed_id'] ?>" class="timelinr-container"></div>
 		<script type="text/javascript">
+			var test = JSON.parse("<?php echo addslashes($args['source']) ?>");
+			//var test = "<?php echo ($args['source']) ?>"
 			var timeline_config = {
 				type: "<?php echo $args['type'] ?>",
 				lang: "<?php echo $args['lang'] ?>",
 				hash_bookmark: <?php echo $args['hash_bookmark'] ?>,
 				width: "<?php echo $args['width'] ?>",
 				height: "<?php echo $args['height'] ?>",
-				source: "<?php echo $args['source'] ?>",
+				start_at_end: <?php echo $args['start_at_end'] ?>,
+				source: test,
 				embed_id: "<?php echo $args['embed_id'] ?>"
 			}
 		</script>
 
-		<?php 
+		<?php
 		$output = ob_get_clean();
-		print_r($output);
 		return $output;
 	}
 
-	public function setup_simple_fields( )
-	{
+	public function setup_simple_fields( ) {
 
-		simple_fields_register_field_group('test',
+		simple_fields_register_field_group( 'test',
 			array (
 				'name' => 'Test field group',
 				'description' => "Test field description",
@@ -198,14 +247,14 @@ class Timelinr {
 						'name' => 'Test textarea',
 						'description' => 'Textarea description',
 						'type' => 'textarea',
-						'type_textarea_options' => array('use_html_editor' => 1)
+						'type_textarea_options' => array( 'use_html_editor' => 1 )
 					),
 					array(
 						'slug' => "my_checkbox_field_slug",
 						'name' => 'Test checkbox',
 						'description' => 'Checkbox description',
 						'type' => 'checkbox',
-						'type_checkbox_options' => array('checked_by_default' => 1)
+						'type_checkbox_options' => array( 'checked_by_default' => 1 )
 					),
 					array(
 						'slug' => "my_radiobutton_field_slug",
@@ -213,8 +262,8 @@ class Timelinr {
 						'description' => 'Radiobutton description',
 						'type' => 'radiobutton',
 						'type_radiobutton_options' => array(
-							array("value" => "Yes"),
-							array("value" => "No")
+							array( "value" => "Yes" ),
+							array( "value" => "No" )
 						)
 					),
 					array(
@@ -225,8 +274,8 @@ class Timelinr {
 						'type_dropdown_options' => array(
 							"enable_multiple" => 1,
 							"enable_extended_return_values" => 1,
-							array("value" => "Yes"),
-							array("value" => "No")
+							array( "value" => "Yes" ),
+							array( "value" => "No" )
 						)
 					),
 					array(
@@ -240,21 +289,21 @@ class Timelinr {
 						'name' => 'Test post',
 						'description' => 'Post description',
 						'type' => 'post',
-						'type_post_options' => array("enabled_post_types" => array("post"))
+						'type_post_options' => array( "enabled_post_types" => array( "post" ) )
 					),
 					array(
 						'slug' => "my_taxonomy_field_slug",
 						'name' => 'Test taxonomy',
 						'description' => 'Taxonomy description',
 						'type' => 'taxonomy',
-						'type_taxonomy_options' => array("enabled_taxonomies" => array("category"))
+						'type_taxonomy_options' => array( "enabled_taxonomies" => array( "category" ) )
 					),
 					array(
 						'slug' => "my_taxonomyterm_field_slug",
 						'name' => 'Test taxonomy term',
 						'description' => 'Taxonomy term description',
 						'type' => 'taxonomyterm',
-						'type_taxonomyterm_options' => array("enabled_taxonomy" => "category")
+						'type_taxonomyterm_options' => array( "enabled_taxonomy" => "category" )
 					),
 					array(
 						'slug' => "my_color_field_slug",
@@ -267,7 +316,7 @@ class Timelinr {
 						'name' => 'Test date selector',
 						'description' => 'Date selector description',
 						'type' => 'date',
-						'type_date_options' => array('use_time' => 1)
+						'type_date_options' => array( 'use_time' => 1 )
 					),
 					array(
 						'slug' => "my_date2_field_slug",
@@ -281,7 +330,7 @@ class Timelinr {
 								"default_date" => "today"
 							)
 						)
-					),			
+					),
 					array(
 						'slug' => "my_user_field_slug",
 						'name' => 'Test user selector',
@@ -293,7 +342,7 @@ class Timelinr {
 		);
 
 		// function simple_fields_register_post_connector($unique_name = "", $new_post_connector = array()) {
-		simple_fields_register_post_connector('test_connector',
+		simple_fields_register_post_connector( 'test_connector',
 			array (
 				'name' => "A test connector",
 				'field_groups' => array(
@@ -303,17 +352,17 @@ class Timelinr {
 						'priority' => 'high'
 					)
 				),
-				'post_types' => array('post')
+				'post_types' => array( 'post' )
 			)
 		);
 
 		/**
 		 * Sets the default post connector for a post type
-		 * 
-		 * @param $post_type_connector = connector id (int) or slug (string) or string __inherit__
-		 * 
+		 *
+		 * @param unknown $post_type_connector = connector id (int) or slug (string) or string __inherit__
+		 *
 		 */
-		simple_fields_register_post_type_default('test_connector', 'post');
+		simple_fields_register_post_type_default( 'test_connector', 'post' );
 
 	}
 
