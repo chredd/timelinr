@@ -50,6 +50,8 @@ class FeedConverter {
 				// Should use something else instead of simplexml
 				$host = parse_url( $item->link );
 				$text = strip_tags( $item->description );
+				//Huh?
+				$text = str_replace("&#160;", "", $text);
 				$text = wp_trim_words( htmlentities( $text ), 30) . '<br><a href="' . (string)$item->link . '" target="_blank">'. str_replace("www.", "", $host['host'] ) .' / Läs artikeln →</a>';
 				$date = array(
 					'startDate' => date( "Y,n,j,H,s" , strtotime( $item->pubDate ) ),
