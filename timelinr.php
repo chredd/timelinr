@@ -30,7 +30,7 @@ class Timelinr {
 
 		// Check if SF is loaded or not.
 		// TODO: Give better feedback. Admin notification?
-		if ( !function_exists( "sf_d" ) ) return;
+		//if ( !function_exists( "sf_d" ) ) return;
 
 		// Register admin styles and scripts
 		add_action( 'admin_print_styles', array( $this, 'register_admin_styles' ) );
@@ -47,7 +47,8 @@ class Timelinr {
 
 		// Add simple fields stuffs
 		// TODO, do this.
-		$this->setup_simple_fields();
+		// Never mind
+		//$this->setup_simple_fields();
 
 		// Add shortcodes
 		add_shortcode( 'timeline', array( $this, 'timeline_func' ) );
@@ -128,6 +129,7 @@ class Timelinr {
 
 	public function timeline_func( $atts ) {
 		global $post;
+
 		extract( shortcode_atts( array(
 					'headline' => null,
 					'text'     => null,
@@ -139,45 +141,44 @@ class Timelinr {
 					'source'   => null,
 					'url'      => null,
 					'height'   => '600',
-					'start_at_end' => 'true'
+					'start_at_end' => 'false'
 				), $atts ) );
 
 		// Then fetch timeline data based on input
 
-		// Base timeline array
+		// Setup base timeline array based on glboal post and input
 
-		if( ! $headline ){
+		if ( ! $headline ) {
 			$headline = $post->post_title;
 		}
-		if( ! $text ){
+		if ( ! $text ) {
 			$text = get_the_excerpt();
 		}
 
 		// Set base information for timeline
 
 		$timeline = array(
-				'headline' => $headline, 
-				'type' => 'default', 
-				'text' => $text, 
-				'startDate' => ''
-			);
+			'headline' => $headline,
+			'type' => 'default',
+			'text' => $text,
+			'startDate' => ''
+		);
 
 		// Add image to start slide?
-		if( has_post_thumbnail( ) ){
-			$image_url = wp_get_attachment_image_src( get_post_thumbnail_id($post->ID), 'large');
+		if ( has_post_thumbnail( ) ) {
+			$image_url = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'large' );
 			$timeline['asset'] = array(
 				'media' => $image_url[0]
-				);
+			);
 		}
 
-
 		// Fetch all feeds
-		if ( $url ){
-			$urls = explode(',', $url);
+		if ( $url ) {
+			$urls = explode( ',', $url );
 			$feeds = array();
-			foreach ($urls as $url) {
+			foreach ( $urls as $url ) {
 				$feed = FeedConverter::fetch( $url );
-				$feeds = array_merge($feeds, $feed);
+				$feeds = array_merge( $feeds, $feed );
 			}
 			$timeline['date'] = $feeds;
 		}
@@ -188,9 +189,9 @@ class Timelinr {
 		//print_r($json);
 
 		// Last of all return the timeline itself
-		return $this->get_timeline( array( 'height' => $height, 'source' => $json ) );
-		return $this->get_timeline( array( 'start_at_end' => 'true', 'height' => 666, 'source' => plugins_url('timelinr/noje.json') ) );
-	}
+		return $this->get_timeline( array( 'height' => $height, 'source' => $json, 'start_at_end' => $start_at_end ) );
+		return $this->get_timeline( array( 'start_at_end' => 'true', 'height' => 666, 'source' => plugins_url( 'timelinr/noje.json' ) ) );
+	} // end timeline_func
 
 	public function get_timeline( $args = array() ) {
 		// Set some defaults
@@ -201,7 +202,8 @@ class Timelinr {
 			'hash_bookmark' => 'false',
 			'embed_id'      => 'timeline-embed',
 			'type'          => 'timeline',
-			'start_at_end'	=>  'false',
+			'start_at_end' =>  'false',
+			'font'			=> 'DroidSerif-DroidSans',
 			'source'        => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
 		);
 		$args = array_merge( $defaults, $args );
@@ -209,8 +211,8 @@ class Timelinr {
 		ob_start(); ?>
 		<div id="<?php echo $args['embed_id'] ?>" class="timelinr-container"></div>
 		<script type="text/javascript">
-			var test = JSON.parse("<?php echo addslashes($args['source']) ?>");
-			//var test = "<?php echo ($args['source']) ?>"
+			var test = JSON.parse("<?php echo addslashes( $args['source'] ) ?>");
+			//var test = "<?php echo $args['source']?>"
 			var timeline_config = {
 				type: "<?php echo $args['type'] ?>",
 				lang: "<?php echo $args['lang'] ?>",
@@ -218,6 +220,8 @@ class Timelinr {
 				width: "<?php echo $args['width'] ?>",
 				height: "<?php echo $args['height'] ?>",
 				start_at_end: <?php echo $args['start_at_end'] ?>,
+				font: '<?php echo $args['font'] ?>',
+				theme: 'dark',
 				source: test,
 				embed_id: "<?php echo $args['embed_id'] ?>"
 			}
@@ -226,146 +230,9 @@ class Timelinr {
 		<?php
 		$output = ob_get_clean();
 		return $output;
-	}
-
-	public function setup_simple_fields( ) {
-
-		simple_fields_register_field_group( 'test',
-			array (
-				'name' => 'Test field group',
-				'description' => "Test field description",
-				'repeatable' => 1,
-				'fields' => array(
-					array(
-						'slug' => "my_text_field_slug",
-						'name' => 'Test text',
-						'description' => 'Text description',
-						'type' => 'text'
-					),
-					array(
-						'slug' => "my_textarea_field_slug",
-						'name' => 'Test textarea',
-						'description' => 'Textarea description',
-						'type' => 'textarea',
-						'type_textarea_options' => array( 'use_html_editor' => 1 )
-					),
-					array(
-						'slug' => "my_checkbox_field_slug",
-						'name' => 'Test checkbox',
-						'description' => 'Checkbox description',
-						'type' => 'checkbox',
-						'type_checkbox_options' => array( 'checked_by_default' => 1 )
-					),
-					array(
-						'slug' => "my_radiobutton_field_slug",
-						'name' => 'Test radiobutton',
-						'description' => 'Radiobutton description',
-						'type' => 'radiobutton',
-						'type_radiobutton_options' => array(
-							array( "value" => "Yes" ),
-							array( "value" => "No" )
-						)
-					),
-					array(
-						'slug' => "my_dropdown_field_slug",
-						'name' => 'Test dropdown',
-						'description' => 'Dropdown description',
-						'type' => 'dropdown',
-						'type_dropdown_options' => array(
-							"enable_multiple" => 1,
-							"enable_extended_return_values" => 1,
-							array( "value" => "Yes" ),
-							array( "value" => "No" )
-						)
-					),
-					array(
-						'slug' => "my_file_field_slug",
-						'name' => 'Test file',
-						'description' => 'File description',
-						'type' => 'file'
-					),
-					array(
-						'slug' => "my_post_field_slug",
-						'name' => 'Test post',
-						'description' => 'Post description',
-						'type' => 'post',
-						'type_post_options' => array( "enabled_post_types" => array( "post" ) )
-					),
-					array(
-						'slug' => "my_taxonomy_field_slug",
-						'name' => 'Test taxonomy',
-						'description' => 'Taxonomy description',
-						'type' => 'taxonomy',
-						'type_taxonomy_options' => array( "enabled_taxonomies" => array( "category" ) )
-					),
-					array(
-						'slug' => "my_taxonomyterm_field_slug",
-						'name' => 'Test taxonomy term',
-						'description' => 'Taxonomy term description',
-						'type' => 'taxonomyterm',
-						'type_taxonomyterm_options' => array( "enabled_taxonomy" => "category" )
-					),
-					array(
-						'slug' => "my_color_field_slug",
-						'name' => 'Test color selector',
-						'description' => 'Color selector description',
-						'type' => 'color'
-					),
-					array(
-						'slug' => "my_date_field_slug",
-						'name' => 'Test date selector',
-						'description' => 'Date selector description',
-						'type' => 'date',
-						'type_date_options' => array( 'use_time' => 1 )
-					),
-					array(
-						'slug' => "my_date2_field_slug",
-						'name' => 'Test date selector',
-						'description' => 'Date v2 selector description',
-						'type' => 'date_v2',
-						"options" => array(
-							"date_v2" => array(
-								"show" => "on_click",
-								"show_as" => "datetime",
-								"default_date" => "today"
-							)
-						)
-					),
-					array(
-						'slug' => "my_user_field_slug",
-						'name' => 'Test user selector',
-						'description' => 'User selector description',
-						'type' => 'user'
-					)
-				)
-			)
-		);
-
-		// function simple_fields_register_post_connector($unique_name = "", $new_post_connector = array()) {
-		simple_fields_register_post_connector( 'test_connector',
-			array (
-				'name' => "A test connector",
-				'field_groups' => array(
-					array(
-						'slug' => 'test',
-						'context' => 'normal',
-						'priority' => 'high'
-					)
-				),
-				'post_types' => array( 'post' )
-			)
-		);
-
-		/**
-		 * Sets the default post connector for a post type
-		 *
-		 * @param unknown $post_type_connector = connector id (int) or slug (string) or string __inherit__
-		 *
-		 */
-		simple_fields_register_post_type_default( 'test_connector', 'post' );
-
-	}
+	} // end get_timeline
 
 } // end class
 
+// LET'S DO THIS
 $timelinr = new Timelinr();
