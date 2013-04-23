@@ -100,10 +100,37 @@ class FeedConverter {
 
 				// Add the item
 				$dates[] = ( $date );
-			}
+			} 
 			
-			return ( array_values($dates) ) ;
-
 		} // end of feed
+		else if( 'wp_query' === $type ){
+			foreach ($data->posts as $post) {
+				
+				$text = strip_shortcodes ( strip_tags( $post->post_content ) );
+				$text = wp_trim_words( trim( $text ), 30) . '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
+				$date = array(
+					'startDate' => date( "Y,n,j" , strtotime( $post->post_date ) ),
+					'headline' =>  ( $post->post_title ) ,
+					'text' => $text 
+				);
+
+				// Add image if post thumbnail
+				if ( has_post_thumbnail( $post->ID ) ) {
+					$image_id = get_post_thumbnail_id( $post->ID );
+					$image = get_post($image_id);
+					$image_url = wp_get_attachment_image_src( $image_id, 'large' );
+					$date['asset'] = array(
+						'media' => $image_url[0],
+						'caption' => $image->post_excerpt
+					);
+				}
+
+				// Add the item
+				$dates[] = ( $date );
+			}
+		} // end of wp_query
+
+		return ( array_values($dates) ) ;
+
 	}
 }

@@ -131,18 +131,24 @@ class Timelinr {
 		global $post;
 
 		extract( shortcode_atts( array(
-					'headline' => null,
-					'text'     => null,
-					'cat'      => null,
-					'tag'      => null,
-					'author'   => null,
-					'from'     => null,
-					'to'       => null,
-					'source'   => null,
-					'url'      => null,
-					'height'   => '600',
-					'start_at_end' => 'false'
+					'headline'      => null,
+					'text'          => null,
+					'cat'           => null,
+					'category_name' => null,
+					'tag'           => null,
+					'author'        => null,
+					'from'          => null,
+					'to'            => null,
+					'source'        => null,
+					'url'           => null,
+					's'				=> null,
+					'monthnum'		=> null,
+					'year'			=> null,
+					'height'        => '600',
+					'start_at_end'  => 'false'
 				), $atts ) );
+
+		//print_r($atts);
 
 		// Then fetch timeline data based on input
 
@@ -183,6 +189,17 @@ class Timelinr {
 			$timeline['date'] = $feeds;
 		}
 
+		// Do the wp-query?
+		if( sizeof($atts) > 0 ){
+			print_r($atts);
+			$query = new WP_Query( $atts );
+			$convert = FeedConverter::convert($query, 'wp_query');
+			$timeline['date'] = $convert;
+		}
+		
+
+		if( sizeof( $timeline['date'] ) == 0 ){ return 'No dice.'; }
+
 		// Get me that JSON! (But first, place it in a timeline root node)
 		$json = json_encode( array( 'timeline' => $timeline  ) );
 
@@ -190,7 +207,7 @@ class Timelinr {
 
 		// Last of all return the timeline itself
 		return $this->get_timeline( array( 'height' => $height, 'source' => $json, 'start_at_end' => $start_at_end ) );
-		return $this->get_timeline( array( 'start_at_end' => 'true', 'height' => 666, 'source' => plugins_url( 'timelinr/noje.json' ) ) );
+		//return $this->get_timeline( array( 'start_at_end' => 'true', 'height' => 666, 'source' => plugins_url( 'timelinr/noje.json' ) ) );
 	} // end timeline_func
 
 	public function get_timeline( $args = array() ) {

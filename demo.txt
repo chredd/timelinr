@@ -4,6 +4,8 @@ Embed:
 
 [timeline url=""]
 
+http://timelinr.local/feed/
+
 [timeline height="100%" url=""]
 
 Feeds:
@@ -23,6 +25,8 @@ http://amerika.aftonbladet.se/feed/
 http://timelinr.local/feed/
 
 [timeline height="100%" url="http://timelinr.local/feed/"]
+
+[timeline url="http://timelinr.local/feed/"]
 
 http://feber.se/rss
 [timeline height="100%" url="http://feber.se/rss"]
