@@ -191,10 +191,12 @@ class Timelinr {
 
 		// Do the wp-query?
 		if( sizeof($atts) > 0 ){
-			print_r($atts);
+			//print_r($atts);
 			$query = new WP_Query( $atts );
 			$convert = FeedConverter::convert($query, 'wp_query');
-			$timeline['date'] = $convert;
+			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
+			else $timeline['date'] = $convert;
+			
 		}
 		
 
