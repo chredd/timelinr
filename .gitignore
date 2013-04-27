@@ -1,2 +1,4 @@
 *.log
 .phptidy-cache
+vendor*
+composer.lock
