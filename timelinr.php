@@ -130,6 +130,8 @@ class Timelinr {
 	public function timeline_func( $atts ) {
 		global $post;
 
+		$feedconverter = new FeedConverter();
+
 		extract( shortcode_atts( array(
 					'headline'      => null,
 					'text'          => null,
@@ -183,17 +185,17 @@ class Timelinr {
 			$urls = explode( ',', $url );
 			$feeds = array();
 			foreach ( $urls as $url ) {
-				$feed = FeedConverter::fetch( $url );
+				$feed = $feedconverter->fetch( $url );
 				$feeds = array_merge( $feeds, $feed );
 			}
 			$timeline['date'] = $feeds;
 		}
 
 		// Do the wp-query?
-		if( sizeof($atts) > 0 ){
-			//print_r($atts);
+		if( $cat ){
+			print_r($atts);
 			$query = new WP_Query( $atts );
-			$convert = FeedConverter::convert($query, 'wp_query');
+			$convert = $feedconverter->convert($query, 'wp_query');
 			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
 			else $timeline['date'] = $convert;
 			
