@@ -1,5 +1,5 @@
 {
-    "name": "chredd/timelinr",
+    "name": "timelinr",
     "description": "chredd/timelinr",
     "require": {
         "monolog/monolog": "1.2.*"
