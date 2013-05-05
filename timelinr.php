@@ -164,9 +164,6 @@ class Timelinr {
 				'to'
 			);
 
-		print_r($wp_query_keys);
-		print_r(array_keys($atts));
-
 		// Then fetch timeline data based on input
 
 		// Setup base timeline array based on glboal post and input
