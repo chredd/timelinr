@@ -1,7 +1,7 @@
 <?php
 require 'vendor/autoload.php';
 /**
- *
+ * TODO: This class should be renamed to something better.
  */
 class FeedConverter {
 
@@ -33,7 +33,7 @@ class FeedConverter {
 		$this->logger->$add_type( $message );
 	}
 
-	public function fetch( $url=null ) {
+	public function fetch_feed( $url=null ) {
 		if ( !$url ) return;
 
 		$cache_key = md5( $url );
@@ -42,7 +42,6 @@ class FeedConverter {
 		if ( false === $remote ) {
 			//echo 'Fetching...';
 			if ( !is_wp_error( $remote = wp_remote_get( $url, array( 'timeout' => 10 ) ) ) ) {
-				//print_r( $remote['body'] );
 				set_transient( $cache_key, $remote, 300 );
 				$this->logger->addInfo( 'Feed fetched: ' . $url );
 			} else {
@@ -69,7 +68,7 @@ class FeedConverter {
 				if ( strlen( (string) $item->title ) < 2 )  continue;
 
 				// TODO: fix this mess!
-				// Should use something else instead of simplexml
+				// Should use something else instead of simplexml, PHPQuery?
 				$host = parse_url( $item->link );
 				$text = strip_tags( $item->description );
 				//Huh?
@@ -81,43 +80,8 @@ class FeedConverter {
 					'text' =>  ( $text )
 				);
 
-				//print_r($date);
-
-
-				// TODO: checking and adding images should be a help function
-				// Find images in Description
-				preg_match( '/(<img[^>]+>)/i', $item->description, $matches );
-				if ( $matches[0] ) {
-					preg_match( '/(alt|title|src)=("[^"]*")/i', $matches[0], $img );
-					if ( $img[0] ) {
-						$date['asset'] = array(
-							'media' => str_replace( "\"", "", $img[2] ),
-							'credit' => '',
-							'caption' => ''
-						);
-					}
-				}
-
-				// Check for enclosure
-				if ( $item->enclosure && $item->enclosure->attributes()->url ) {
-					$attr = $item->enclosure->attributes();
-					$date['asset'] = array(
-						'media' => (string)$attr['url'],
-						'credit' => '',
-						'caption' => ''
-					);
-				}
-
-				// Check for media:content
-				//print_r($item);
-
-				if ( $item->media_content ) {
-					$attr = $item->media_content->attributes();
-					$date['asset'] = array(
-						'media' => (string)$attr['url'],
-						'credit' => '',
-						'caption' => ''
-					);
+				if( $asset = $this->get_image_from_feed($item) ) {
+					$date['asset'] = $asset;
 				}
 
 				// Add the item
@@ -155,5 +119,44 @@ class FeedConverter {
 		$this->log( 'Converted type: ' . $type );
 		return array_values( $dates );
 
+	}
+
+	private function get_image_from_feed($item){
+		$asset = null;
+		// Look for image in desc
+		preg_match( '/(<img[^>]+>)/i', $item->description, $matches );
+		if ( $matches[0] ) {
+			preg_match( '/(alt|title|src)=("[^"]*")/i', $matches[0], $img );
+			if ( $img[0] ) {
+				$asset = array(
+					'media' => str_replace( "\"", "", $img[2] ),
+					'credit' => '',
+					'caption' => ''
+				);
+			}
+		}
+
+		// Check for enclosure
+		if ( $item->enclosure && $item->enclosure->attributes()->url ) {
+			$attr = $item->enclosure->attributes();
+			$asset = array(
+				'media' => (string)$attr['url'],
+				'credit' => '',
+				'caption' => ''
+			);
+		}
+
+		// Check for media:content
+
+		if ( $item->media_content ) {
+			$attr = $item->media_content->attributes();
+			$asset = array(
+				'media' => (string)$attr['url'],
+				'credit' => '',
+				'caption' => ''
+			);
+		}
+		
+		return null !== $asset ? $asset : false ;
 	}
 }

@@ -185,7 +185,7 @@ class Timelinr {
 			$urls = explode( ',', $url );
 			$feeds = array();
 			foreach ( $urls as $url ) {
-				$feed = $feedconverter->fetch( $url );
+				$feed = $feedconverter->fetch_feed( $url );
 				$feeds = array_merge( $feeds, $feed );
 			}
 			$timeline['date'] = $feeds;
@@ -201,13 +201,12 @@ class Timelinr {
 			
 		}
 		
-
-		if( sizeof( $timeline['date'] ) == 0 ){ return 'No dice.'; }
-
 		// Get me that JSON! (But first, place it in a timeline root node)
 		$json = json_encode( array( 'timeline' => $timeline  ) );
 
 		//print_r($json);
+
+		if( sizeof( $timeline['date'] ) == 0 ){ return 'No dates returned.'; }
 
 		// Last of all return the timeline itself
 		return $this->get_timeline( array( 'height' => $height, 'source' => $json, 'start_at_end' => $start_at_end ) );
