@@ -128,6 +128,7 @@ class Timelinr {
 	 *---------------------------------------------*/
 
 	public function timeline_func( $atts ) {
+		// Todo: refactor this function, breaking down the functions
 		global $post;
 
 		$feedconverter = new FeedConverter();
@@ -150,7 +151,21 @@ class Timelinr {
 					'start_at_end'  => 'false'
 				), $atts ) );
 
-		//print_r($atts);
+		// Allowed keys for wp_query (used as trigger)
+		$wp_query_keys = array(
+				'cat',
+				'category_name',
+				'tag',
+				'author',
+				's',
+				'monthnum',
+				'year',
+				'from',
+				'to'
+			);
+
+		print_r($wp_query_keys);
+		print_r(array_keys($atts));
 
 		// Then fetch timeline data based on input
 
@@ -192,13 +207,14 @@ class Timelinr {
 		}
 
 		// Do the wp-query?
-		if( $cat ){
+		// What parameters should be checked?
+		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
 			print_r($atts);
 			$query = new WP_Query( $atts );
 			$convert = $feedconverter->convert($query, 'wp_query');
 			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
 			else $timeline['date'] = $convert;
-			
+			echo "Adding wp_query..";
 		}
 		
 		// Get me that JSON! (But first, place it in a timeline root node)
