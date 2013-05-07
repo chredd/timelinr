@@ -21,6 +21,7 @@ class FeedConverter {
 	}
 
 	private function setup_logging() {
+		return false; #temp disable
 		$this->current_dir = dirname( __FILE__ );
 		$this->log_name = 'timelinr';
 		$this->log_file = $this->current_dir .  '/log/feed_converter.log';
@@ -29,6 +30,7 @@ class FeedConverter {
 	}
 
 	private function log( $message = '', $type = 'Info' ){
+		return false; #temp disable
 		$add_type = 'add'.$type;
 		$this->logger->$add_type( $message );
 	}
