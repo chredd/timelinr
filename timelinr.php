@@ -206,12 +206,10 @@ class Timelinr {
 		// Do the wp-query?
 		// What parameters should be checked?
 		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
-			print_r($atts);
 			$query = new WP_Query( $atts );
 			$convert = $feedconverter->convert($query, 'wp_query');
 			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
 			else $timeline['date'] = $convert;
-			echo "Adding wp_query..";
 		}
 		
 		// Get me that JSON! (But first, place it in a timeline root node)
