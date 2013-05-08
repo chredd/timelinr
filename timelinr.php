@@ -204,7 +204,7 @@ class Timelinr {
 		}
 
 		// Do the wp-query?
-		// What parameters should be checked?
+		// TODO: this query should be cached via transients api. Base cache key on atts.
 		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
 			$query = new WP_Query( $atts );
 			$convert = $feedconverter->convert($query, 'wp_query');
