@@ -48,6 +48,7 @@ class FeedConverter {
 				$this->logger->addInfo( 'Feed fetched: ' . $url );
 			} else {
 				$this->log( 'Could not fetch', 'Error' );
+				// Todo, log the wp_error as well.
 			}
 		}
 
