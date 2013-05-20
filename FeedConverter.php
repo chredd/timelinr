@@ -24,7 +24,6 @@ class FeedConverter {
 
 		if( isset($atts) && ! empty($atts) ){
 			$this->atts = $atts;
-			print_r($atts);
 		}
 	}
 
