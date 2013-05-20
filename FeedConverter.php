@@ -12,16 +12,16 @@ class FeedConverter {
 	private $log_name;
 	private $log_file;
 	private $current_dir;
-	private $logger; 
+	private $logger;
 
 	function __construct() {
 		// Do some stuffs in the constructor
 		$this->setup_logging();
-		$this->log('Initializing FeedConverter object.' );
+		$this->log( 'Initializing FeedConverter object.' );
 	}
 
 	private function setup_logging() {
-		return false; #temp disable
+		return false; //temp disable
 		$this->current_dir = dirname( __FILE__ );
 		$this->log_name = 'timelinr';
 		$this->log_file = $this->current_dir .  '/log/feed_converter.log';
@@ -29,8 +29,8 @@ class FeedConverter {
 		$this->logger->pushHandler( new Monolog\Handler\StreamHandler( $this->log_file, Monolog\Logger::INFO ) );
 	}
 
-	private function log( $message = '', $type = 'Info' ){
-		return false; #temp disable
+	private function log( $message = '', $type = 'Info' ) {
+		return false; //temp disable
 		$add_type = 'add'.$type;
 		$this->logger->$add_type( $message );
 	}
@@ -65,7 +65,7 @@ class FeedConverter {
 		if ( 'feed' === $type ) {
 			$data = str_replace( 'media:', 'media_', $data );
 			$xml = simplexml_load_string( $data, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS );
-			if( !$xml->channel ) return;
+			if ( !$xml->channel ) return;
 			foreach ( $xml->channel->item as $index => $item ) {
 
 				if ( strlen( (string) $item->title ) < 2 )  continue;
@@ -83,7 +83,7 @@ class FeedConverter {
 					'text' =>  ( $text )
 				);
 
-				if( $asset = $this->get_image_from_feed($item) ) {
+				if ( $asset = $this->get_image_from_feed( $item ) ) {
 					$date['asset'] = $asset;
 				}
 
@@ -95,12 +95,14 @@ class FeedConverter {
 		else if ( 'wp_query' === $type ) {
 				foreach ( $data->posts as $post ) {
 
+					$classname = $this->get_classname( $post );
 					$text = strip_shortcodes ( strip_tags( $post->post_content ) );
 					$text = wp_trim_words( trim( $text ), 30 ) . '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
 					$date = array(
 						'startDate' => date( "Y,n,j" , strtotime( $post->post_date ) ),
-						'headline' =>  ( $post->post_title ) ,
-						'text' => $text
+						'headline'  => $post->post_title,
+						'text'      => $text,
+						'classname' => $classname
 					);
 
 					// Add image if post thumbnail
@@ -124,7 +126,7 @@ class FeedConverter {
 
 	}
 
-	private function get_image_from_feed($item){
+	private function get_image_from_feed( $item ) {
 		$asset = null;
 		// Look for image in desc
 		preg_match( '/(<img[^>]+>)/i', $item->description, $matches );
@@ -159,7 +161,29 @@ class FeedConverter {
 				'caption' => ''
 			);
 		}
-		
+
 		return null !== $asset ? $asset : false ;
+	}
+
+	private function get_classname( $post ) {
+		if ( !$post ) return;
+
+		$classname = ' ';
+		$categories = get_the_category( $post->ID );
+		if ( $categories ) {
+			foreach ( $categories as $category ) {
+				$classname .= 'category-' . $category->slug . ' ';
+			}
+		}
+
+		$posttags = get_the_tags( $post->ID );
+		if ( $posttags ) {
+			foreach ( $posttags as $tag ) {
+				$classname .= 'tag-' . $tag->slug . ' ';
+			}
+
+		}
+
+		return $classname;
 	}
 }

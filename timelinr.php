@@ -203,9 +203,12 @@ class Timelinr {
 			$timeline['date'] = $feeds;
 		}
 
-		// Do the wp-query?
+		// WP_query!
 		// TODO: this query should be cached via transients api. Base cache key on atts.
 		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
+			// Set some defaults
+			$atts['no_found_rows'] = true; // No calc found rows!
+
 			$query = new WP_Query( $atts );
 			$convert = $feedconverter->convert($query, 'wp_query');
 			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
@@ -235,6 +238,7 @@ class Timelinr {
 			'type'          => 'timeline',
 			'start_at_end' =>  'false',
 			'font'			=> 'DroidSerif-DroidSans',
+			'css'			=> 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
 			'source'        => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
 		);
 		$args = array_merge( $defaults, $args );
@@ -252,7 +256,7 @@ class Timelinr {
 				height: "<?php echo $args['height'] ?>",
 				start_at_end: <?php echo $args['start_at_end'] ?>,
 				font: '<?php echo $args['font'] ?>',
-				theme: 'dark',
+				css: 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
 				source: test,
 				embed_id: "<?php echo $args['embed_id'] ?>"
 			}
