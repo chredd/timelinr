@@ -1,5 +1,5 @@
 <?php
-require 'vendor/autoload.php';
+//require 'vendor/autoload.php';
 /**
  * TODO: This class should be renamed to something better.
  */
@@ -13,15 +13,22 @@ class FeedConverter {
 	private $log_file;
 	private $current_dir;
 	private $logger;
+	private $atts;
 
-	function __construct() {
+	function __construct( $atts = array() ) {
 		// Do some stuffs in the constructor
-		$this->setup_logging();
-		$this->log( 'Initializing FeedConverter object.' );
+
+		// Disable logging for now. Readd when Composer is back in the project.
+		// $this->setup_logging();
+		// $this->log( 'Initializing FeedConverter object.' );
+
+		if( isset($atts) && ! empty($atts) ){
+			$this->atts = $atts;
+			print_r($atts);
+		}
 	}
 
 	private function setup_logging() {
-		return false; //temp disable
 		$this->current_dir = dirname( __FILE__ );
 		$this->log_name = 'timelinr';
 		$this->log_file = $this->current_dir .  '/log/feed_converter.log';
@@ -30,9 +37,9 @@ class FeedConverter {
 	}
 
 	private function log( $message = '', $type = 'Info' ) {
-		return false; //temp disable
-		$add_type = 'add'.$type;
-		$this->logger->$add_type( $message );
+		// $add_type = 'add'.$type;
+		// $this->logger->$add_type( $message );
+		error_log( $type . ': ' . $message );
 	}
 
 	public function fetch_feed( $url=null ) {
@@ -42,12 +49,11 @@ class FeedConverter {
 		$remote = get_transient( $cache_key );
 
 		if ( false === $remote ) {
-			//echo 'Fetching...';
 			if ( !is_wp_error( $remote = wp_remote_get( $url, array( 'timeout' => 10 ) ) ) ) {
 				set_transient( $cache_key, $remote, 300 );
-				$this->logger->addInfo( 'Feed fetched: ' . $url );
+				//$this->logger->addInfo( 'Feed fetched: ' . $url );
 			} else {
-				$this->log( 'Could not fetch', 'Error' );
+				$this->log( 'Could not fetch', 'Info' );
 				// Todo, log the wp_error as well.
 			}
 		}
@@ -68,6 +74,7 @@ class FeedConverter {
 			if ( !$xml->channel ) return;
 			foreach ( $xml->channel->item as $index => $item ) {
 
+				// We must have a title in order to continue.
 				if ( strlen( (string) $item->title ) < 2 )  continue;
 
 				// TODO: fix this mess!
@@ -93,11 +100,18 @@ class FeedConverter {
 
 		} // end of feed
 		else if ( 'wp_query' === $type ) {
+				global $post;
 				foreach ( $data->posts as $post ) {
 
 					$classname = $this->get_classname( $post );
-					$text = strip_shortcodes ( strip_tags( $post->post_content ) );
-					$text = wp_trim_words( trim( $text ), 30 ) . '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
+					$text = $post->post_excerpt;
+					if(empty($text)){
+						$text = strip_shortcodes ( strip_tags( $post->post_content ) );
+					}
+					$text = wp_trim_words( trim( $text ), 30 );
+					if( $this->atts['post_links'] ){
+						$text .= '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
+					} 
 					$date = array(
 						'startDate' => date( "Y,n,j" , strtotime( $post->post_date ) ),
 						'headline'  => $post->post_title,
@@ -121,7 +135,6 @@ class FeedConverter {
 				}
 			} // end of wp_query
 
-		$this->log( 'Converted type: ' . $type );
 		return array_values( $dates );
 
 	}

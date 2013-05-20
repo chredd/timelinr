@@ -131,25 +131,35 @@ class Timelinr {
 		// Todo: refactor this function, breaking down the functions
 		global $post;
 
-		$feedconverter = new FeedConverter();
-
 		extract( shortcode_atts( array(
-					'headline'      => null,
-					'text'          => null,
-					'cat'           => null,
-					'category_name' => null,
-					'tag'           => null,
-					'author'        => null,
-					'from'          => null,
-					'to'            => null,
-					'source'        => null,
-					'url'           => null,
-					's'				=> null,
-					'monthnum'		=> null,
-					'year'			=> null,
-					'height'        => '600',
-					'start_at_end'  => 'false'
+					'headline'       => null,
+					'text'           => null,
+					'cat'            => null,
+					'category_name'  => null,
+					'tag'            => null,
+					'author'         => null,
+					'from'           => null,
+					'to'             => null,
+					'source'         => null,
+					'url'            => null,
+					's'              => null,
+					'monthnum'       => null,
+					'year'           => null,
+					'posts_per_page' => -1,
+					'post_links'	=> true,
+					'height'         => '600',
+					'start_at_end'   => 'false'
 				), $atts ) );
+
+		// Set some defaults
+		$default_atts = array(
+				'no_found_rows' => true, 
+				'posts_per_page' => -1,
+				'post_links' => true,
+			);
+		$atts = array_merge($default_atts, $atts);
+
+		$feedconverter = new FeedConverter( $atts );
 
 		// Allowed keys for wp_query (used as trigger)
 		$wp_query_keys = array(
@@ -206,10 +216,9 @@ class Timelinr {
 		// WP_query!
 		// TODO: this query should be cached via transients api. Base cache key on atts.
 		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
-			// Set some defaults
-			$atts['no_found_rows'] = true; // No calc found rows!
 
 			$query = new WP_Query( $atts );
+			//print_r($query);
 			$convert = $feedconverter->convert($query, 'wp_query');
 			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
 			else $timeline['date'] = $convert;
