@@ -28,7 +28,7 @@ class FeedConverter {
 		// $this->setup_logging();
 		// $this->log( 'Initializing FeedConverter object.' );
 
-		if( isset( $atts ) && ! empty( $atts ) && is_array( $atts ) ){
+		if ( isset( $atts ) && ! empty( $atts ) && is_array( $atts ) ) {
 			$this->atts = $atts;
 		}
 	}
@@ -88,10 +88,10 @@ class FeedConverter {
 				$text = strip_tags( $item->description );
 				//Huh?
 				$text = str_replace( "&#160;", "", $text );
-				
-				if( isset( $this->atts['trim_words'] ) ){
-					$text = wp_trim_words( htmlentities( $text ), 30 ); 
-				} 
+
+				if ( isset( $this->atts['trim_words'] ) ) {
+					$text = wp_trim_words( htmlentities( $text ), 30 );
+				}
 				$text .= '<br><a href="' . (string)$item->link . '" target="_blank">'. str_replace( "www.", "", $host['host'] ) .' / Läs artikeln →</a>';
 				$date = array(
 					'startDate' => date( "Y,n,j,H,s" , strtotime( $item->pubDate ) ),
@@ -114,21 +114,28 @@ class FeedConverter {
 
 					$classname = $this->get_item_classname( $post );
 					$text = $post->post_excerpt;
-					if(empty($text)){
-						$text = strip_shortcodes ( strip_tags( $post->post_content ) );
+
+					if ( empty( $text ) ) {
+						$text = strip_shortcodes ( ( $post->post_content ) );
 					}
-					if( isset( $this->atts['trim_words'] ) ){
+					if ( isset( $this->atts['trim_words'] ) && is_numeric( $this->atts['trim_words'] && $this->atts['trim_words'] > 0 ) ) {
 						$text = wp_trim_words( trim( $text ), $this->atts['trim_words'] );
 					}
-					if( $this->atts['post_links'] ){
+					if ( $this->atts['post_links'] ) {
 						$text .= '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
-					} 
+					}
 					$date = array(
-						'startDate' => date( "Y,n,j" , strtotime( $post->post_date ) ),
+						'startDate' => date( "Y,n,j,H,s" , strtotime( $post->post_date ) ),
 						'headline'  => $post->post_title,
 						'text'      => $text,
-						'classname' => $classname
+						'classname' => $classname,
 					);
+
+					if ( 'true' === $this->atts['tags'] ) {
+						$cats = get_the_category( $post->ID );
+						$tag = $cats[0]->name;
+						$date['tag'] = $tag;
+					}
 
 					// Add image if post thumbnail
 					if ( has_post_thumbnail( $post->ID ) ) {
@@ -141,7 +148,13 @@ class FeedConverter {
 						);
 					}
 
-					if( $asset = $this->get_map( $post ) ){
+					// Assets from SF
+					if ( $asset = $this->get_asset( $post ) ) {
+						$date['asset'] = $asset;
+					}
+
+					// Map from SF
+					if ( $asset = $this->get_map( $post ) ) {
 						$date['asset'] = $asset;
 					}
 
@@ -216,28 +229,82 @@ class FeedConverter {
 	}
 
 	private function get_map( $post ) {
-		
+
 		if ( !$post ) return;
 		if ( !function_exists( "simple_fields_field_googlemaps_register" ) ) return;
 
 		// http://maps.google.com/maps?q=New+York,+NY&hl=en&ll=40.721242,-73.987427&spn=0.164187,0.365295&sll=40.722673,-73.993263&sspn=0.082092,0.182648&oq=New+Y&hnear=New+York&t=m&z=11
-		$map = simple_fields_fieldgroup( 'timelinr_gmap', $post->ID );
-		if( $map[0]['timelinr_gmap']['lat'] ){
-			echo '<pre>';
-			print_r($map[1]['timelinr_gmap']);
-			echo '</pre>';
-			$gmaps_string = 'http://maps.google.com/maps?q=&hl=sv&q='. $map[0]['timelinr_gmap']['lat'] .','. $map[0]['timelinr_gmap']['lng'] .'&sll='. $map[0]['timelinr_gmap']['lat'] .','. $map[0]['timelinr_gmap']['lng'] .'&z='. $map[0]['timelinr_gmap']['preferred_zoom'];
+		$map_group = simple_fields_fieldgroup( self::SF_MAP_GROUP, $post->ID );
+		if ( !empty( $map_group[ self::SF_MAP_ID ]['lat'] ) ) {
+
+			if ( true != $map_group[ self::SF_MAP_USE ] ) return false;
+			// Return true if we don't the map as illustration
+
+			$map = $map_group[ self::SF_MAP_ID ];
+			// Handle empty zoom level
+			if ( empty( $map['preferred_zoom'] ) ) $map['preferred_zoom'] = 11;
+			// Maybe we should use static maps instead
+			$gmaps_string = 'http://maps.google.com/maps?q=&hl=sv&q='. $map['lat'] .','. $map['lng'] .'&sll='. $map['lat'] .','. $map['lng'] .'&z='. $map['preferred_zoom'];
 			$asset = array(
 				'media' => $gmaps_string,
 				'credit' => '',
-				'caption' => ''	
+				'caption' => ''
 			);
-			print_r($asset);
 			return $asset;
 		}
 
 		return false;
-		
+
+	}
+
+	private function get_asset( $post ) {
+
+		if ( !$post ) return;
+		if ( !function_exists( "sf_d" ) ) return;
+
+		$asset_group = simple_fields_fieldgroup( self::SF_ASSET_GROUP, $post->ID );
+		if ( !empty( $asset_group ) ) {
+			$asset = array(
+				'media' => $asset_group,
+				'credit' => '',
+				'caption' => ''
+			);
+			return $asset;
+		}
+
+		return false;
+
+	}
+
+	/**
+	 * trims text to a space then adds ellipses if desired
+	 * @param string $input text to trim
+	 * @param int $length in characters to trim to
+	 * @param bool $ellipses if ellipses (...) are to be added
+	 * @param bool $strip_html if html tags are to be stripped
+	 * @return string 
+	 */
+	function trim_text($input, $length, $ellipses = true, $strip_html = true) {
+		//strip tags, if desired
+		if ($strip_html) {
+			$input = strip_tags($input);
+		}
+
+		//no need to trim, already shorter than trim length
+		if (strlen($input) <= $length) {
+			return $input;
+		}
+
+		//find last space within length
+		$last_space = strrpos(substr($input, 0, $length), ' ');
+		$trimmed_text = substr($input, 0, $last_space);
+
+		//add ellipses (...)
+		if ($ellipses) {
+			$trimmed_text .= '...';
+		}
+
+		return $trimmed_text;
 	}
 
 }

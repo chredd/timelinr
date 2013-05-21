@@ -149,31 +149,33 @@ class Timelinr {
 					'height'         => '600',
 					'start_at_end'   => 'false',
 					'trim'           => 'words',
+					'gmap_key'       => '666',
+					'tags'           => false,
 				), $atts ) );
 
 		// Set some defaults
 		$default_atts = array(
-				'no_found_rows'  => true, 
-				'posts_per_page' => -1,
-				'post_links'     => true,
-				'trim_words'     => 30,
-			);
-		$atts = array_merge($default_atts, $atts);
+			'no_found_rows'  => true,
+			'posts_per_page' => -1,
+			'post_links'     => true,
+			'trim_words'     => 30,
+		);
+		$atts = array_merge( $default_atts, $atts );
 
 		$feedconverter = new FeedConverter( $atts );
 
 		// Allowed keys for wp_query (used as trigger)
 		$wp_query_keys = array(
-				'cat',
-				'category_name',
-				'tag',
-				'author',
-				's',
-				'monthnum',
-				'year',
-				'from',
-				'to'
-			);
+			'cat',
+			'category_name',
+			'tag',
+			'author',
+			's',
+			'monthnum',
+			'year',
+			'from',
+			'to'
+		);
 
 		// Then fetch timeline data based on input
 
@@ -215,17 +217,17 @@ class Timelinr {
 
 		// WP_query!
 		// TODO: this query should be cached via transients api. Base cache key on atts.
-		if( count( array_intersect( $wp_query_keys, array_keys($atts) ) ) !== 0  ){
+		if ( count( array_intersect( $wp_query_keys, array_keys( $atts ) ) ) !== 0  ) {
 			$query = new WP_Query( $atts );
-			$convert = $feedconverter->convert($query, 'wp_query');
-			if( isset($timeline['date']) ) $timeline['date'] = array_merge($timeline['date'], $convert);
+			$convert = $feedconverter->convert( $query, 'wp_query' );
+			if ( isset( $timeline['date'] ) ) $timeline['date'] = array_merge( $timeline['date'], $convert );
 			else $timeline['date'] = $convert;
 		}
-		
+
 		// Get me that JSON! (But first, place it in a timeline root node)
 		$json = json_encode( array( 'timeline' => $timeline  ) );
 
-		if( sizeof( $timeline['date'] ) == 0 ){ return 'No dates returned.'; }
+		if ( sizeof( $timeline['date'] ) == 0 ) { return 'No dates returned.'; }
 
 		// Last of all return the timeline itself
 		return $this->get_timeline( array( 'height' => $height, 'source' => $json, 'start_at_end' => $start_at_end ) );
@@ -242,9 +244,9 @@ class Timelinr {
 			'embed_id'      => 'timeline-embed',
 			'type'          => 'timeline',
 			'start_at_end' =>  'false',
-			'maptype'		=> 'ROADMAP',
-			'font'			=> 'DroidSerif-DroidSans',
-			'css'			=> 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
+			'maptype'  => 'ROADMAP',
+			'font'   => 'DroidSerif-DroidSans',
+			'css'   => 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
 			'source'        => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
 		);
 		$args = array_merge( $defaults, $args );
@@ -265,6 +267,7 @@ class Timelinr {
 				css: 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
 				source: source,
 				maptype: "<?php echo $args['maptype'] ?>",
+				gmap_key: "<?php echo $args['gmap_key'] ?>",
 				embed_id: "<?php echo $args['embed_id'] ?>"
 			}
 		</script>
@@ -274,24 +277,25 @@ class Timelinr {
 		return $output;
 	} // end get_timeline
 
-	private function setup_simple_fields()
-	{
-
+	private function setup_simple_fields() {
+		
+		// Require the google maps extension. Todo, don't do this.
 		if ( !function_exists( "simple_fields_field_googlemaps_register" ) ) {
 			return;
 		}
 
-		simple_fields_register_field_group('timelinr_gmap',
+		simple_fields_register_field_group( 'timelinr_map_group',
 			array (
 				'name' => 'Timeline map',
 				'description' => "Map for the timeline",
-				'repeatable' => 1,
+				'repeatable' => 0,
 				'fields' => array(
 					array(
-						'slug' => "timelinr_maptitle",
-						'name' => 'Title',
-						'description' => 'The title for the position',
-						'type' => 'text'
+						'slug' => "timelinr_use_map",
+						'name' => 'Use map as illustration',
+						'description' => 'Replaces featured image',
+						'type' => 'checkbox',
+						'type_checkbox_options' => array( 'checked_by_default' => 0 )
 					),
 					array(
 						"type" => "googlemaps",
@@ -304,40 +308,69 @@ class Timelinr {
 							"defaultLocationLng" => 18.06491,
 						)
 					),
+				)
+			)
+		);
+
+		simple_fields_register_field_group( 'timelinr_asset_group',
+			array (
+				'name' => 'Timeline Asset',
+				'description' => "Adds asset for the timeline entry",
+				'repeatable' => 0,
+				'fields' => array(
 					array(
-						'slug' => "timelinr_use_map",
-						'name' => 'Use map as illustration',
-						'description' => 'Replaces featured image',
-						'type' => 'checkbox',
-						'type_checkbox_options' => array('checked_by_default' => 1)
+						'slug' => "timelinr_asset",
+						'name' => 'URL to asset goes here!',
+						'description' => 'Image, Youtube, Vimeo, Google Maps, Wikipedia, Flickr, Instagram, etc.',
+						'type' => 'text'
 					),
 				)
 			)
 		);
 
 		// function simple_fields_register_post_connector($unique_name = "", $new_post_connector = array()) {
-		simple_fields_register_post_connector('timelinr_map_connector',
+		simple_fields_register_post_connector( 'timelinr_map_connector',
 			array (
 				'name' => "Timlinr Map Connector",
 				'field_groups' => array(
 					array(
-						'slug' => 'timelinr_gmap',
+						'slug' => 'timelinr_map_group',
 						'context' => 'normal',
 						'priority' => 'high'
 					),
 				),
 				// post_types can also be string, if only one post type is to be connected
-				'post_types' => array('post')
+				'post_types' => array( 'post' )
+			)
+		);
+
+		simple_fields_register_post_connector( 'timelinr_sf_connector',
+			array (
+				'name' => "Timlinr SF Connector",
+				'field_groups' => array(
+					array(
+						'slug' => 'timelinr_map_group',
+						'context' => 'normal',
+						'priority' => 'high'
+					),
+					array(
+						'slug' => 'timelinr_asset_group',
+						'context' => 'normal',
+						'priority' => 'high'
+					),
+				),
+				// post_types can also be string, if only one post type is to be connected
+				'post_types' => array( 'post' )
 			)
 		);
 
 		/**
 		 * Sets the default post connector for a post type
-		 * 
-		 * @param $post_type_connector = connector id (int) or slug (string) or string __inherit__
-		 * 
+		 *
+		 * @param unknown $post_type_connector = connector id (int) or slug (string) or string __inherit__
+		 *
 		 */
-		simple_fields_register_post_type_default('timelinr_map_connector', 'post');
+		simple_fields_register_post_type_default( 'timelinr_sf_connector', 'post' );
 	}
 
 
