@@ -15,6 +15,12 @@ class FeedConverter {
 	private $logger;
 	private $atts;
 
+	const SF_MAP_GROUP = 'timelinr_map_group';
+	const SF_ASSET_GROUP = 'timelinr_asset_group';
+	const SF_MAP_ID = 'timelinr_map';
+	const SF_ASSET_ID = 'timelinr_asset';
+	const SF_MAP_USE = 'timelinr_use_map';
+
 	function __construct( $atts = array() ) {
 		// Do some stuffs in the constructor
 
