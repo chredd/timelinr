@@ -135,6 +135,10 @@ class FeedConverter {
 						);
 					}
 
+					if( $asset = $this->get_map( $post ) ){
+						$date['asset'] = $asset;
+					}
+
 					// Add the item
 					$dates[] = ( $date );
 				}
@@ -204,4 +208,30 @@ class FeedConverter {
 
 		return $classname;
 	}
+
+	private function get_map( $post ) {
+		
+		if ( !$post ) return;
+		if ( !function_exists( "simple_fields_field_googlemaps_register" ) ) return;
+
+		// http://maps.google.com/maps?q=New+York,+NY&hl=en&ll=40.721242,-73.987427&spn=0.164187,0.365295&sll=40.722673,-73.993263&sspn=0.082092,0.182648&oq=New+Y&hnear=New+York&t=m&z=11
+		$map = simple_fields_fieldgroup( 'timelinr_gmap', $post->ID );
+		if( $map[0]['timelinr_gmap']['lat'] ){
+			echo '<pre>';
+			print_r($map[1]['timelinr_gmap']);
+			echo '</pre>';
+			$gmaps_string = 'http://maps.google.com/maps?q=&hl=sv&q='. $map[0]['timelinr_gmap']['lat'] .','. $map[0]['timelinr_gmap']['lng'] .'&sll='. $map[0]['timelinr_gmap']['lat'] .','. $map[0]['timelinr_gmap']['lng'] .'&z='. $map[0]['timelinr_gmap']['preferred_zoom'];
+			$asset = array(
+				'media' => $gmaps_string,
+				'credit' => '',
+				'caption' => ''	
+			);
+			print_r($asset);
+			return $asset;
+		}
+
+		return false;
+		
+	}
+
 }

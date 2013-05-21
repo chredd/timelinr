@@ -12,17 +12,13 @@ License: -
 
 require 'FeedConverter.php';
 
-//$feed = FeedConverter::fetch('http://www.aftonbladet.se/nojesbladet/melodifestivalen/rss.xml');
-
-
 class Timelinr {
-
-	/*--------------------------------------------*
-	 * Constructor
-	 *--------------------------------------------*/
 
 	const TESTJSON = '';
 
+	/*--------------------------------------------*
+	 * Constructor
+	 *--------------------------------------------*
 	/**
 	 * Initializes the plugin by setting localization, filters, and administration functions.
 	 */
@@ -53,6 +49,10 @@ class Timelinr {
 		// Add shortcodes
 		add_shortcode( 'timeline', array( $this, 'timeline_func' ) );
 
+		// Load Simple Fields?
+		if ( function_exists( "sf_d" ) ) {
+			$this->setup_simple_fields();
+		}
 
 	} // end constructor
 
@@ -242,6 +242,7 @@ class Timelinr {
 			'embed_id'      => 'timeline-embed',
 			'type'          => 'timeline',
 			'start_at_end' =>  'false',
+			'maptype'		=> 'ROADMAP',
 			'font'			=> 'DroidSerif-DroidSans',
 			'css'			=> 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
 			'source'        => 'https://docs.google.com/spreadsheet/pub?key=0AiWUhxLpQgUXdEwtOEZVZU1lcllGVHJRbjlsYTJ1VGc&output=html'
@@ -251,7 +252,7 @@ class Timelinr {
 		ob_start(); ?>
 		<div id="<?php echo $args['embed_id'] ?>" class="timelinr-container"></div>
 		<script type="text/javascript">
-			var test = JSON.parse("<?php echo addslashes( $args['source'] ) ?>");
+			var source = JSON.parse("<?php echo addslashes( $args['source'] ) ?>");
 			//var test = "<?php echo $args['source']?>"
 			var timeline_config = {
 				type: "<?php echo $args['type'] ?>",
@@ -262,7 +263,8 @@ class Timelinr {
 				start_at_end: <?php echo $args['start_at_end'] ?>,
 				font: '<?php echo $args['font'] ?>',
 				css: 'http://timelinr.local/wp-content/plugins/timelinr/css/themes/dark.css',
-				source: test,
+				source: source,
+				maptype: "<?php echo $args['maptype'] ?>",
 				embed_id: "<?php echo $args['embed_id'] ?>"
 			}
 		</script>
@@ -271,6 +273,73 @@ class Timelinr {
 		$output = ob_get_clean();
 		return $output;
 	} // end get_timeline
+
+	private function setup_simple_fields()
+	{
+
+		if ( !function_exists( "simple_fields_field_googlemaps_register" ) ) {
+			return;
+		}
+
+		simple_fields_register_field_group('timelinr_gmap',
+			array (
+				'name' => 'Timeline map',
+				'description' => "Map for the timeline",
+				'repeatable' => 1,
+				'fields' => array(
+					array(
+						'slug' => "timelinr_maptitle",
+						'name' => 'Title',
+						'description' => 'The title for the position',
+						'type' => 'text'
+					),
+					array(
+						"type" => "googlemaps",
+						"slug" => "timelinr_map",
+						"name" => "Timelinr map",
+						"options" => array(
+							"defaultZoomLevel" => 10,
+							"defaultMapTypeId" => "ROADMAP", // ROADMAP | SATELLITE | HYBRID | TERRAIN
+							"defaultLocationLat" => 59.32893,
+							"defaultLocationLng" => 18.06491,
+						)
+					),
+					array(
+						'slug' => "timelinr_use_map",
+						'name' => 'Use map as illustration',
+						'description' => 'Replaces featured image',
+						'type' => 'checkbox',
+						'type_checkbox_options' => array('checked_by_default' => 1)
+					),
+				)
+			)
+		);
+
+		// function simple_fields_register_post_connector($unique_name = "", $new_post_connector = array()) {
+		simple_fields_register_post_connector('timelinr_map_connector',
+			array (
+				'name' => "Timlinr Map Connector",
+				'field_groups' => array(
+					array(
+						'slug' => 'timelinr_gmap',
+						'context' => 'normal',
+						'priority' => 'high'
+					),
+				),
+				// post_types can also be string, if only one post type is to be connected
+				'post_types' => array('post')
+			)
+		);
+
+		/**
+		 * Sets the default post connector for a post type
+		 * 
+		 * @param $post_type_connector = connector id (int) or slug (string) or string __inherit__
+		 * 
+		 */
+		simple_fields_register_post_type_default('timelinr_map_connector', 'post');
+	}
+
 
 } // end class
 
