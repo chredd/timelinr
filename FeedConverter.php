@@ -22,7 +22,7 @@ class FeedConverter {
 		// $this->setup_logging();
 		// $this->log( 'Initializing FeedConverter object.' );
 
-		if( isset($atts) && ! empty($atts) ){
+		if( isset( $atts ) && ! empty( $atts ) && is_array( $atts ) ){
 			$this->atts = $atts;
 		}
 	}
@@ -82,7 +82,11 @@ class FeedConverter {
 				$text = strip_tags( $item->description );
 				//Huh?
 				$text = str_replace( "&#160;", "", $text );
-				$text = wp_trim_words( htmlentities( $text ), 30 ) . '<br><a href="' . (string)$item->link . '" target="_blank">'. str_replace( "www.", "", $host['host'] ) .' / Läs artikeln →</a>';
+				
+				if( isset( $this->atts['trim_words'] ) ){
+					$text = wp_trim_words( htmlentities( $text ), 30 ); 
+				} 
+				$text .= '<br><a href="' . (string)$item->link . '" target="_blank">'. str_replace( "www.", "", $host['host'] ) .' / Läs artikeln →</a>';
 				$date = array(
 					'startDate' => date( "Y,n,j,H,s" , strtotime( $item->pubDate ) ),
 					'headline' =>  ( htmlentities( $item->title ) ),
@@ -102,12 +106,14 @@ class FeedConverter {
 				global $post;
 				foreach ( $data->posts as $post ) {
 
-					$classname = $this->get_classname( $post );
+					$classname = $this->get_item_classname( $post );
 					$text = $post->post_excerpt;
 					if(empty($text)){
 						$text = strip_shortcodes ( strip_tags( $post->post_content ) );
 					}
-					$text = wp_trim_words( trim( $text ), 30 );
+					if( isset( $this->atts['trim_words'] ) ){
+						$text = wp_trim_words( trim( $text ), $this->atts['trim_words'] );
+					}
 					if( $this->atts['post_links'] ){
 						$text .= '<br><a href="'. get_permalink( $post->ID ) .'">Läs inlägget →</a>';
 					} 
@@ -177,7 +183,7 @@ class FeedConverter {
 		return null !== $asset ? $asset : false ;
 	}
 
-	private function get_classname( $post ) {
+	private function get_item_classname( $post ) {
 		if ( !$post ) return;
 
 		$classname = ' ';

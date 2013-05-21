@@ -116,7 +116,6 @@ class Timelinr {
 	 * Registers and enqueues plugin-specific scripts.
 	 */
 	public function register_plugin_scripts() {
-
 		//wp_enqueue_script( 'timelinr-plugin-script', plugins_url( 'timelinr/js/display.js' ), array('jquery'), null, true );
 		// TODO: only queue when needed
 		wp_enqueue_script( 'timelinejs-script', plugins_url( 'timelinr/js/storyjs-embed.js' ), array( 'jquery' ), null, true );
@@ -146,16 +145,18 @@ class Timelinr {
 					'monthnum'       => null,
 					'year'           => null,
 					'posts_per_page' => -1,
-					'post_links'	=> true,
+					'post_links'     => true,
 					'height'         => '600',
-					'start_at_end'   => 'false'
+					'start_at_end'   => 'false',
+					'trim'           => 'words',
 				), $atts ) );
 
 		// Set some defaults
 		$default_atts = array(
-				'no_found_rows' => true, 
+				'no_found_rows'  => true, 
 				'posts_per_page' => -1,
-				'post_links' => true,
+				'post_links'     => true,
+				'trim_words'     => 30,
 			);
 		$atts = array_merge($default_atts, $atts);
 
@@ -176,8 +177,7 @@ class Timelinr {
 
 		// Then fetch timeline data based on input
 
-		// Setup base timeline array based on glboal post and input
-
+		// Setup base timeline array based on global post and input
 		if ( ! $headline ) {
 			$headline = $post->post_title;
 		}
@@ -224,8 +224,6 @@ class Timelinr {
 		
 		// Get me that JSON! (But first, place it in a timeline root node)
 		$json = json_encode( array( 'timeline' => $timeline  ) );
-
-		//print_r($json);
 
 		if( sizeof( $timeline['date'] ) == 0 ){ return 'No dates returned.'; }
 
